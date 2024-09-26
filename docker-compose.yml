@@ -1,4 +1,5 @@
 # docker-compose.yml
+version: '0.1'
 
 services:
   frontend:
@@ -15,3 +16,18 @@ services:
     volumes:
       - ./backend:/app
 
+  postgres_db:
+    image: postgres:latest
+    container_name: gen_ai_postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres123
+    ports:
+      - '5432:5432'
+    volumes:
+      - gen_ai_postgres:/var/lib/postgresql/data
+
+volumes:
+  gen_ai_postgres:
+    driver: local
