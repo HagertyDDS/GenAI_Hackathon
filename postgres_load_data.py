@@ -10,9 +10,9 @@ except:
 
 GET_COMMENTS_QUERY = """
 select
-    c.table_name,
-    c.column_name,
-    pgd.description
+    c.table_name as TABLE_NAME,
+    c.column_name as COLUMN_NAME,
+    pgd.description as DESCRIPTION
 from pg_catalog.pg_statio_all_tables as st
 inner join pg_catalog.pg_description pgd on (
     pgd.objoid = st.relid
@@ -33,9 +33,8 @@ def get_all_table_comments():
 
         try:
             # Get all column comments for all tables in the database
-            curs.execute(GET_COMMENTS_QUERY)
-            rows = curs.fetchall()
-            return rows
+            df = pd.read_sql(GET_COMMENTS_QUERY, con=CONN)
+            return df
 
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
