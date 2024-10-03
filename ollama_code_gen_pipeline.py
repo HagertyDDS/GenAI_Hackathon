@@ -82,14 +82,26 @@ CODE_GEN_CHAIN = (
 
 if __name__ == "__main__":
     from pprint import pprint
-    output = CODE_GEN_CHAIN.invoke({
-        "docs": ALL_DOCS,
-        "col": "clean_title", 
-        "request": "Give me a function that takes the `clean_title` column from my dataframe and transforms it into a boolean"
-    })
-    pprint(output)
 
-    # TODO: Append code output var to some file `auto_generated_functions.py`
+    # Record oriented set of columns and requests
+    requests = [
+        ("clean_title", "Give me a function that takes the `clean_title` column from my dataframe and transforms it into a boolean"),
+        ("engine", "Give me a function that takes the `engine` column and outputs the following new columns: `horsepower`, `displacement`, `num_cylinders`. If you can't identify a value for each column, output a null. The expected values for our columns in this example are as follows: `horsepower` = `172`, `displacement` = `1.6`, `num_cylinders` = `4`")
+    ]
+    for col, req in requests:
+        output = CODE_GEN_CHAIN.invoke({
+            "docs": ALL_DOCS,
+            "col": col, 
+            "request": req
+        })
+        pprint(output)
+
+        # TODO: Append code output var to some file `auto_generated_functions.py`
+        if "code" in output:
+            with open("./auto_generated_code.py", "a") as f:
+                f.write("\n")
+                f.write(output["code"])
+            print("wrote output")
 
     # TODO: Setup pipeline using NEMO to call functions
 
