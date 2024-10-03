@@ -12,13 +12,14 @@ from operator import itemgetter
 from langchain.pydantic_v1 import BaseModel, Field
 from langchain.chat_models import ChatOllama
 from langchain.prompts import PromptTemplate
-from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
+from langchain_core.output_parsers import JsonOutputParser
 from langchain.callbacks.manager import CallbackManager
-from langchain_core.runnables import RunnablePassthrough, RunnableLambda
+from langchain_core.runnables import RunnableLambda
 from langchain.callbacks.streaming_stdout_final_only import FinalStreamingStdOutCallbackHandler
 
 from postgres_load_data import get_all_table_comments
 
+# TODO: Refine inputs and outputs to be consistent
 # Set up our prompt for the code generation pipeline
 CODE_GEN_TEMPLATE = """
 Provide valid, expert-level, python code to perform the following user request:
@@ -37,6 +38,7 @@ Finally, your output should be valid JSON with two keys: `code` and `OAS`. The v
 {format_instructions}
 """
 
+# TODO: Look into other output parsers like the DF parser that may be able to automate calling for us
 # Set up output parsing so our model gives us both the code we need to execute and the OAS spec that our downstream model will need to call said functions
 class OutputCode(BaseModel):
     code: str = Field(description="raw, executable, python code that accomplishes the user requested task")
@@ -86,7 +88,7 @@ if __name__ == "__main__":
     # Record oriented set of columns and requests
     requests = [
         ("clean_title", "Give me a function that takes the `clean_title` column from my dataframe and transforms it into a boolean"),
-        ("engine", "Give me a function that takes the `engine` column and outputs the following new columns: `horsepower`, `displacement`, `num_cylinders`. If you can't identify a value for each column, output a null. The expected values for our columns in this example are as follows: `horsepower` = `172`, `displacement` = `1.6`, `num_cylinders` = `4`")
+        ("engine", """Give me a function that takes the `engine` column and outputs the following new columns: `horsepower`, `displacement`, `num_cylinders`. If you can't identify a value for each column, output a null. The expected values for our columns in this example are as follows: `horsepower` = `172`, `displacement` = `1.6`, `num_cylinders` = `4`""")
     ]
     for col, req in requests:
         output = CODE_GEN_CHAIN.invoke({
@@ -104,4 +106,5 @@ if __name__ == "__main__":
             print("wrote output")
 
     # TODO: Setup pipeline using NEMO to call functions
+    # https://docs.mistral.ai/capabilities/function_calling/
 

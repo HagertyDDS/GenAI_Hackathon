@@ -16,3 +16,4 @@ When you're done for the day you can stock docker compose with a cntrl+c. If you
     a. `ollama pull deepseek-coder-v2`
     b. `ollama pull mistral-nemo`
     c. `ollama serve`
+3. Run `python ollama_code_gen_pipeline.py`
