@@ -59,7 +59,7 @@ def results_view() -> rx.Component:
         ),
         rx.box(
             rx.vstack(
-                rx.heading("PureML Dataset"),
+                rx.heading("FeatureFlow Dataset"),
                 rx.heading("0.0834"),
                 rx.heading("R-squared"),
                 

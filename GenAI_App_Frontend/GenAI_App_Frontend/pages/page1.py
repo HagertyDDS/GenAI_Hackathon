@@ -9,7 +9,6 @@ from ..views.radius_picker import radius_picker
 from ..views.scaling_picker import scaling_picker
 from ..views.csv_upload import csv_upload_view
 # from ..views.table import main_table
-from ..backend.table_state import TableState
 from ..views.csv_table import main_table
 from ..views.upload_and_table import editable_text_example
 from ..views.input_path import csv_path_input_example
@@ -25,6 +24,18 @@ from .landing.index import index as hero
 from .. import styles
 
 from ..views.button_stuff import default_class_name, variant_styles, get_variant_class
+from ..views.feature_datatable import feature_datatable
+
+
+# Backend imports 
+from ..backend.table_state import TableState
+from ..backend.feature_flow_state import FeatureFlowState
+
+
+
+class Page1State(rx.State): 
+
+    placeholder: str
 
 
 
@@ -39,49 +50,53 @@ def page1() -> rx.Component:
     return rx.vstack(
         rx.box(
             rx.hstack(
-       
-                
                 rx.html(
                     """
-        
                     <iframe src='https://my.spline.design/chips-2f9fd8cec3143149efef3af7a6de074a/' 
                     frameborder='0' width='767px' height='674px'></iframe>
                     """,
-                    width="100%",
+                    width="80%",
                     height="100%",
                 ),
-                # rx.heading(
-                #     "RAG Context.Agentic Workflow.For the betterment of the Machine"
-                # ),
+                
+                # Responsive text block with stacked layout
                 rx.el.h1(
-                        # "RAG Powered Dataset Enrichment. For a better ML Model",
-                        rx.vstack(
-                            rx.text(
-                                "Gen AI Powered.",
-                                margin_bottom="0px",
-                            ),
-                            rx.text(
-                                "Feature Engineering.", 
-                                color="#6439FF",
-                                margin_top="0px",
-                                line_height="0px",
-                                font_weight="800",
-                            ),
-                            rx.text("For a better ML Model."),
-                            spacing="0",
+                    rx.vstack(
+                        rx.text(
+                            "Gen-AI Powered.",
+                            margin_bottom="0px",
+                            padding_bottom="0px",
+                            line_height="unset",
                         ),
-                        font_size="70px",
-                        class_name="max-w-full inline-block bg-clip-text bg-gradient-to-r from-slate-12 to-slate-11 w-full font-xx-large text-center text-blue-500 text-balance", #mx-auto break-words
+                        rx.text(
+                            "Feature Building.",
+                            color="#6439FF",
+                            margin_top="0px",
+                            line_height="unset",
+                            font_weight="800",
+                        ),
+                        rx.text(
+                            "For a better ML Model.",
+                            line_height="unset",
+
+                        ),
+                        spacing="0",
+
+                    ),
+                    font_size=["40px", "50px", "60px", "70px"],  # Responsive font sizes
+                    class_name="font-xx-large text-blue-500",
+                    text_align="left",  # Ensure text is centered
+                    justify="left",  # Center horizontally
+
                 ),
                 
-                #height="70vh",  # Adjust this value as needed
-                justify="center",  # Center horizontally
+                justify="left",  # Center horizontally
                 align="center",    # Center vertically
-                
+                flex_direction=["column", "column", "row"],  # Stack on small screens, horizontal on large screens
+                spacing="20px",    # Adjust spacing between elements
             ),
             width="100%",
             padding_bottom="40px",
-
         ),
         rx.divider(
             width="100%",
@@ -153,9 +168,36 @@ def page1() -> rx.Component:
                 width="100%"
 
             ),
+            
+            # rx.box(
+            #     csv_path_input_example(),
+            #     margin_bottom="60px",
+            # ),
+            
+
             rx.button(
-                "Generate Feature Set",
-                on_click=rx.redirect("/"),
+                "Test AutoML with default vals",
+                on_click=FeatureFlowState.run_test_auto_ml_values,
+                class_name=default_class_name
+                    + " "
+                    + variant_styles["primary"]["class_name"]
+                    + " "
+                    + get_variant_class("indigo"),
+                margin_bottom="60px",
+            ),
+            rx.button(
+                "Test Code Gen Chain",
+                on_click=FeatureFlowState.test_code_gen_chain,
+                class_name=default_class_name
+                    + " "
+                    + variant_styles["primary"]["class_name"]
+                    + " "
+                    + get_variant_class("indigo"),
+                margin_bottom="60px",
+            ),
+            rx.button(
+                "Test Code Gen Execution",
+                on_click=FeatureFlowState.test_code_gen_and_execution,
                 class_name=default_class_name
                     + " "
                     + variant_styles["primary"]["class_name"]
@@ -164,12 +206,14 @@ def page1() -> rx.Component:
                 margin_bottom="60px",
             ),
             rx.box(
-                csv_path_input_example(),
+                feature_datatable(),
                 margin_bottom="60px",
             ),
+
+
             rx.button(
-                "Train Model",
-                on_click=rx.redirect("/"),
+                "Run AutoML Process",
+                on_click=FeatureFlowState.run_auto_ml_process,
                 class_name=default_class_name
                     + " "
                     + variant_styles["primary"]["class_name"]
@@ -177,11 +221,27 @@ def page1() -> rx.Component:
                     + get_variant_class("indigo"),
                 margin_bottom="60px",
             ),
+            rx.box(
+                rx.vstack(
+                    rx.text("Base Model Metrics: "),
+                    rx.text(
+                        FeatureFlowState.get_base_ml_metrics
+                    ),
+                    margin_bottom="15px",
+                ),
+                rx.vstack(
+                    rx.text("Revised Model Metrics: "),
+                    rx.text(
+                        FeatureFlowState.get_revised_ml_metrics
+                    ),
+                    margin_bottom="15px",
+                ),
+            ),
+
             rx.box(
                 results_view(),
                 margin_bottom="60px",
             ),
-
           
         ),
 
