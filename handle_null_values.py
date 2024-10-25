@@ -81,7 +81,7 @@ if __name__ == "__main__":
         print(df.columns)
 
     # Dictionary to store imputation choices
-    imputation_methods = ['None', 'Mean', 'Median', 'Mode', 'Custom Value']  #Option to look at the column and come up with Chris
+    imputation_methods = ['None', 'Mean', 'Median', 'Mode', 'Custom Value'] 
     imputation_choices = {}
 
     # Iterate through columns to handle null values
