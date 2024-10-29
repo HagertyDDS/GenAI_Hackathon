@@ -1,6 +1,6 @@
 import reflex as rx
 
-
+from ...backend.feature_flow_state import FeatureFlowState
 
 def ml_spec_data_list() -> rx.Component:
     return(
@@ -10,7 +10,7 @@ def ml_spec_data_list() -> rx.Component:
                     rx.data_list.label("ML Problem Type"),
                     rx.data_list.value(
                         rx.badge(
-                            "Regression",
+                            FeatureFlowState.ml_problem_type,
                             variant="soft",
                             radius="full",
                         )
@@ -19,16 +19,18 @@ def ml_spec_data_list() -> rx.Component:
                 ),
                 rx.data_list.item(
                     rx.data_list.label("Prediction Target"),
-                    rx.data_list.value(rx.code("price_col")),
+                    rx.data_list.value(FeatureFlowState.target_var),
                 ),
                 rx.data_list.item(
                     rx.data_list.label("Evaluation Metric"),
-                    rx.data_list.value("R-Squared"),
+                    rx.data_list.value(FeatureFlowState.evaluation_metric),
                     align="center",
                 ),
                 rx.data_list.item(
                     rx.data_list.label("Training Framework"),
-                    rx.data_list.value("XGBoost"),
+                    # rx.data_list.value("XGBoost"),
+                    rx.data_list.value(FeatureFlowState.training_framework),
+
                 ),
                 
             ),

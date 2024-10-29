@@ -184,16 +184,7 @@ def feature_list_view() -> rx.Component:
         feature_card_4(),
         feature_card_5(),
 
-        rx.button(
-            "turn off card 1",
-            on_click=FeatureCardManager.turn_card_1_off,
-            class_name=default_class_name
-            + " "
-            + variant_styles["success"]["class_name"]
-            + " "
-            + get_variant_class("green"),
-                              
-        ),
+        
 
         rx.button(
             "+",
@@ -230,16 +221,6 @@ def feature_list_view() -> rx.Component:
         rx.button(
                 "Generate Features",
                 on_click=FeatureFlowState.run_code_gen_and_execution,
-                class_name=default_class_name
-                    + " "
-                    + variant_styles["primary"]["class_name"]
-                    + " "
-                    + get_variant_class("indigo"),
-                margin_bottom="60px",
-        ),
-        rx.button(
-                "Test Generate Features (with set Feature values)",
-                on_click=FeatureFlowState.test_code_gen_and_execution,
                 class_name=default_class_name
                     + " "
                     + variant_styles["primary"]["class_name"]

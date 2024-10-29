@@ -11,13 +11,14 @@ from ..views.csv_upload import csv_upload_view
 # from ..views.table import main_table
 from ..views.csv_table import main_table
 from ..views.upload_and_table import editable_text_example
-from ..views.input_path import csv_path_input_example
+from ..views.input_path import base_dataset_input
 from ..views.upload_csv import upload_csv
 from ..views.pdf_upload import index as pdf_upload
 from ..views.automl_settings import ml_config_view as automl_settings
 from ..views.db_connection import database_connection
 from ..views.feature_list import feature_list_view
 from ..views.results_view import results_view
+from ..views.column_null_options import base_null_options, final_null_options
 
 from .landing.index import index as hero
 
@@ -63,13 +64,13 @@ def page1() -> rx.Component:
                 rx.el.h1(
                     rx.vstack(
                         rx.text(
-                            "Gen-AI Powered.",
+                            "Gen-AI",
                             margin_bottom="0px",
                             padding_bottom="0px",
                             line_height="unset",
                         ),
                         rx.text(
-                            "Feature Building.",
+                            "Feature Building",
                             color="#6439FF",
                             margin_top="0px",
                             line_height="unset",
@@ -109,17 +110,20 @@ def page1() -> rx.Component:
 
 
         ###
-        rx.flex(
-            rx.image(src="/reflex.png", height="50px"),
-            rx.image(src="/box.png", height="50px"),
-            rx.image(src="/llamaindex.png", height="50px"),
-            rx.image(src="/pinecone.png", height="50px"),
-            spacing="2",
-            align="center",
-            justify="center",
-            width="100%",
-            margin_bottom="25px"
-        ),
+
+        #REPLACE this with logos of stuff used
+
+        # rx.flex(
+        #     rx.image(src="/reflex.png", height="50px"),
+        #     rx.image(src="/box.png", height="50px"),
+        #     rx.image(src="/llamaindex.png", height="50px"),
+        #     rx.image(src="/pinecone.png", height="50px"),
+        #     spacing="2",
+        #     align="center",
+        #     justify="center",
+        #     width="100%",
+        #     margin_bottom="25px"
+        # ),
 
         ###
 
@@ -153,9 +157,23 @@ def page1() -> rx.Component:
                 margin_bottom="60px"
             ),
             rx.box(
-                csv_path_input_example(),
+                base_dataset_input(),
                 margin_bottom="60px",
             ),
+
+
+            ######
+
+            rx.box(
+                base_null_options(),
+                margin_bottom="60px",
+                width="60%",
+            ), 
+
+            ######
+
+
+
             rx.box(
                 automl_settings(),
                 margin_bottom="60px",
@@ -168,12 +186,19 @@ def page1() -> rx.Component:
                 width="100%"
 
             ),
+
+
             
-            # rx.box(
-            #     csv_path_input_example(),
-            #     margin_bottom="60px",
-            # ),
-            
+            rx.button(
+                "Test Generate Features (with set Feature values)",
+                on_click=FeatureFlowState.test_code_gen_and_execution,
+                class_name=default_class_name
+                    + " "
+                    + variant_styles["primary"]["class_name"]
+                    + " "
+                    + get_variant_class("indigo"),
+                margin_bottom="30px",
+            ),
 
             rx.button(
                 "Test AutoML with default vals",
@@ -185,34 +210,43 @@ def page1() -> rx.Component:
                     + get_variant_class("indigo"),
                 margin_bottom="60px",
             ),
-            rx.button(
-                "Test Code Gen Chain",
-                on_click=FeatureFlowState.test_code_gen_chain,
-                class_name=default_class_name
-                    + " "
-                    + variant_styles["primary"]["class_name"]
-                    + " "
-                    + get_variant_class("indigo"),
-                margin_bottom="60px",
-            ),
-            rx.button(
-                "Test Code Gen Execution",
-                on_click=FeatureFlowState.test_code_gen_and_execution,
-                class_name=default_class_name
-                    + " "
-                    + variant_styles["primary"]["class_name"]
-                    + " "
-                    + get_variant_class("indigo"),
-                margin_bottom="60px",
-            ),
+            # rx.button(
+            #     "Test Code Gen Chain",
+            #     on_click=FeatureFlowState.test_code_gen_chain,
+            #     class_name=default_class_name
+            #         + " "
+            #         + variant_styles["primary"]["class_name"]
+            #         + " "
+            #         + get_variant_class("indigo"),
+            #     margin_bottom="60px",
+            # ),
+            # rx.button(
+            #     "Test Code Gen Execution",
+            #     on_click=FeatureFlowState.test_code_gen_and_execution,
+            #     class_name=default_class_name
+            #         + " "
+            #         + variant_styles["primary"]["class_name"]
+            #         + " "
+            #         + get_variant_class("indigo"),
+            #     margin_bottom="60px",
+            # ),
             rx.box(
                 feature_datatable(),
                 margin_bottom="60px",
             ),
+            ######
+
+            rx.box(
+                final_null_options(),
+                margin_bottom="60px",
+                width="60%",
+            ), 
+
+            ######
 
 
             rx.button(
-                "Run AutoML Process",
+                "Build Model",
                 on_click=FeatureFlowState.run_auto_ml_process,
                 class_name=default_class_name
                     + " "
@@ -221,22 +255,7 @@ def page1() -> rx.Component:
                     + get_variant_class("indigo"),
                 margin_bottom="60px",
             ),
-            rx.box(
-                rx.vstack(
-                    rx.text("Base Model Metrics: "),
-                    rx.text(
-                        FeatureFlowState.get_base_ml_metrics
-                    ),
-                    margin_bottom="15px",
-                ),
-                rx.vstack(
-                    rx.text("Revised Model Metrics: "),
-                    rx.text(
-                        FeatureFlowState.get_revised_ml_metrics
-                    ),
-                    margin_bottom="15px",
-                ),
-            ),
+            
 
             rx.box(
                 results_view(),

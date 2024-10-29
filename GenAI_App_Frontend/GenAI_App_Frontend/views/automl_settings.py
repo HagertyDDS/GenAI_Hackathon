@@ -23,7 +23,7 @@ def ml_config_view() -> rx.Component:
                 align="center",
             ),
             rx.select(
-                ["Classification", "Regression"],
+                ["classification", "regression"],
                 placeholder="ML Problem Type",
                 label="ML Problem Type",
                 value=FeatureFlowState.ml_problem_type,
@@ -58,25 +58,28 @@ def ml_config_view() -> rx.Component:
             width="100%",
             margin_bottom="30px"
         ),
-        rx.vstack(
-            rx.hstack(
-                rx.icon("chevrons-right-left",  color="#6439FF"),
-                rx.heading("Evaluation Metric", size="5"),
-                align="center",
-            ),
-            rx.select(
-                ["Accuracy", "F1 Score","R-sqared", "Log Loss", "Precision", "ROC/AUC", "MSE", "MAE"],
-                placeholder="Evaluation Metric",
-                label="Evaluation Metric",
-                value=FeatureFlowState.evaluation_metric,
-                on_change=FeatureFlowState.set_evaluation_metric,
-                color="#6439FF",
-                radius="full",
-                width="50%",
-            ),
-            width="100%",
-            margin_bottom="30px"
-        ),
+
+        # Removing evaluation metric, will just present all the eval metrics
+
+        # rx.vstack(
+        #     rx.hstack(
+        #         rx.icon("chevrons-right-left",  color="#6439FF"),
+        #         rx.heading("Evaluation Metric", size="5"),
+        #         align="center",
+        #     ),
+        #     rx.select(
+        #         ["Accuracy", "F1 Score","R-sqared", "Log Loss", "Precision", "ROC/AUC", "MSE", "MAE"],
+        #         placeholder="Evaluation Metric",
+        #         label="Evaluation Metric",
+        #         value=FeatureFlowState.evaluation_metric,
+        #         on_change=FeatureFlowState.set_evaluation_metric,
+        #         color="#6439FF",
+        #         radius="full",
+        #         width="50%",
+        #     ),
+        #     width="100%",
+        #     margin_bottom="30px"
+        # ),
         rx.vstack(
             
             rx.hstack(
@@ -85,7 +88,8 @@ def ml_config_view() -> rx.Component:
                 align="center",
             ),
             rx.select(
-                ["XGBoost", "LightGBM", "Scikit-learn", "Random Forest"],
+                ["xgboost", "xgb_limitdepth", "lgbm", "rf", "lgbm_spark", "rf_spark"],
+   
                 placeholder="Training Framework",
                 label="Training Framework",
                 value=FeatureFlowState.training_framework,

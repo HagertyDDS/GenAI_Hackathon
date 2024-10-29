@@ -12,7 +12,7 @@ from sklearn.metrics import (
 )
 import importlib.util
 import os
-
+import joblib
 # Backend imports 
 
 from .feature_code_gen import CODE_GEN_CHAIN
@@ -33,21 +33,54 @@ def load_all_functions(file_path: str = "auto_generated_functions.py"):
 
     return functions
 
-def execute_functions_on_df(functions, df: pd.DataFrame):
+
+
+def execute_functions_on_df(functions, df: pd.DataFrame, target_var: str):
     print("\n EXECUTE_FUNCTIONS_ON_DF...")
     print("Function:", functions)
 
     """Execute all functions on the dataframe and combine the results."""
     combined_df = pd.DataFrame()
 
+    # Extract and remove the target variable column
+    target_column = df[target_var]
+    df = df.drop(columns=[target_var])
+
     for func in functions:
         print(f"Executing function: {func.__name__}")
         result = func(df)  # Each function is expected to return a single-column dataframe
         combined_df = pd.concat([combined_df, result], axis=1)  # Combine each column
 
+    # Concatenate the target variable back to the end of the combined DataFrame
+    combined_df = pd.concat([combined_df, target_column], axis=1)
+
     return combined_df
 
 
+
+def remove_duplicate_columns(df_without_target: pd.DataFrame, result_df: pd.DataFrame) -> pd.DataFrame:
+    """Remove columns from df_without_target that have the same name as any column in result_df."""
+    # Identify columns to drop from df_without_target that are in result_df
+    columns_to_drop = df_without_target.columns.intersection(result_df.columns)
+    
+    # Drop these columns from df_without_target
+    df_without_duplicates = df_without_target.drop(columns=columns_to_drop)
+    
+    return df_without_duplicates
+
+
+# null imputation function
+def handle_null_imputation(df, imputation_choices):
+    for column, method in imputation_choices.items():
+        if method == 'Mean':
+            df[column].fillna(df[column].mean(), inplace=True)
+        elif method == 'Median':
+            df[column].fillna(df[column].median(), inplace=True)
+        elif method == 'Mode':
+            df[column].fillna(df[column].mode()[0], inplace=True)
+        # elif method == 'Custom':
+        #     df[column].fillna(custom_value, inplace=True)
+    return df
 
 
 def train_and_compare_automl(base_df: pd.DataFrame, revised_df: pd.DataFrame, problem_type: str, target: str, training_framework: str):
@@ -69,6 +102,28 @@ def train_and_compare_automl(base_df: pd.DataFrame, revised_df: pd.DataFrame, pr
         """Helper function to split the dataset into features (X) and target (y)."""
         X = df.drop(columns=[target])
         y = df[target]
+
+
+        # # Ensure y is a Series
+        # if isinstance(y, pd.DataFrame):
+        #     y = y.squeeze()  # Convert single-column DataFrame to Series
+
+        # # Convert categorical columns in X to one-hot encoded numeric columns
+        # X = pd.get_dummies(X, drop_first=True)  # One-hot encode and drop the first category to avoid multicollinearity
+
+
+        print("X shape:", X.shape)
+        print("y shape:", y.shape)
+
+        # print("X columns:", X.columns.tolist())
+        # print("y columns:", y.columns.tolist() if isinstance(y, pd.DataFrame) else y.name)
+
+        print("X head:", X.head(10))
+        print("y head:", y.head(10))
+
+        print(type(X))
+        print(type(y))
+
         return X, y
     
     def train_automl(X_train, y_train, X_test, y_test, problem_type, training_framework):
@@ -106,6 +161,11 @@ def train_and_compare_automl(base_df: pd.DataFrame, revised_df: pd.DataFrame, pr
     print(f"Training model on the revised dataset with {training_framework}...")
     revised_automl = train_automl(X_revised_train, y_revised_train, X_revised_test, y_revised_test, problem_type, training_framework)
     
+    # Save models to files
+    joblib.dump(base_automl, "models/base_model.pkl")
+    joblib.dump(revised_automl, "models/revised_model.pkl")
+    print("Models saved as 'base_model.pkl' and 'revised_model.pkl'.")
+
     # Predict and evaluate the models
     if problem_type == "classification":
         y_base_pred = base_automl.predict(X_base_test)
@@ -191,8 +251,16 @@ class FeatureFlowState(rx.State):
 
 
     # Datasets 
-    base_dataset: pd.DataFrame
-    final_dataset: pd.DataFrame
+    base_dataset: pd.DataFrame = None 
+    final_dataset: pd.DataFrame = None 
+
+    # Column lists 
+    base_dataset_cols: List[str] = []
+    final_dataset_cols: List[str] = []
+
+    # Imputation Choices 
+    base_imputation_choices: dict = {}
+    final_imputation_choices: dict = {}
 
     # All Docs obj 
     all_docs: pd.DataFrame
@@ -214,6 +282,11 @@ class FeatureFlowState(rx.State):
     def set_ml_problem_type(self, val: str): 
         self.ml_problem_type = val
 
+        if self.ml_problem_type == 'classification': 
+            self.evaluation_metric = 'accuracy'
+        elif self.ml_problem_type == 'regression':
+            self.evaluation_metric = 'r2'
+
     def set_target_var(self, val: str): 
         self.target_var = val
 
@@ -229,15 +302,44 @@ class FeatureFlowState(rx.State):
         self.base_dataset = pd.read_csv(path)
 
         return True 
+    
 
+    @rx.var 
+    def base_dataset_set(self) -> bool:
+        return self.base_dataset is not None
+    
+    @rx.var 
+    def final_dataset_set(self) -> bool:
+        return self.final_dataset is not None
 
+    @rx.var 
+    def get_base_dataset_cols(self) -> List[str]: 
+        if self.base_dataset is not None: 
+            return self.base_dataset.columns.tolist()
+
+        return []
+    
+    def set_base_imputation_choices(self, val: dict): 
+        self.base_imputation_choices = val
+
+        null_handled_df = handle_null_imputation(self.base_dataset, self.base_imputation_choices)
+        self.base_dataset = null_handled_df
+
+    def set_final_imputation_choices(self, val: dict): 
+        self.final_imputation_choices = val
+
+        null_handled_df = handle_null_imputation(self.final_dataset, self.final_imputation_choices)
+        self.final_dataset = null_handled_df
+
+    
     @rx.var
     def get_ml_options(self) -> str:
         """
         Return a formatted string containing the ML options.
         """
-        return f"ML Problem Type: {self.ml_problem_type}, Target Variable: {self.target_var}, Evaluation Metric: {self.evaluation_metric}, Training Framework: {self.training_framework}"
-    
+        # return f"ML Problem Type: {self.ml_problem_type}, Target Variable: {self.target_var}, Evaluation Metric: {self.evaluation_metric}, Training Framework: {self.training_framework}"
+        return f"ML Problem Type: {self.ml_problem_type}, Target Variable: {self.target_var}, Training Framework: {self.training_framework}"
+
 
     @rx.var 
     def get_base_ml_metrics(self) -> str: 
@@ -258,6 +360,41 @@ class FeatureFlowState(rx.State):
             return str(base_metrics)
 
         return "AutoML not run..."
+    
+    # @rx.var
+    # def get_main_revised_ml_metric(self) -> str: 
+    #     if len(self.auto_ml_metrics_dic) >= 2: 
+    #         metrics = self.auto_ml_metrics_dic["revised_model_metrics"]
+    #         if self.ml_problem_type == 'classification':
+    #             return str(metrics['accuracy'])
+    #         elif self.ml_problem_type == 'regression':
+    #             return str(metrics['r2'])
+            
+    #     return "..."
+
+    @rx.var
+    def get_main_base_ml_metric(self) -> str: 
+        if len(self.auto_ml_metrics_dic) >= 2: 
+            metrics = self.auto_ml_metrics_dic["base_model_metrics"]
+            
+            if self.ml_problem_type == 'classification':
+                return f"{metrics['accuracy']:.4f}"
+            elif self.ml_problem_type == 'regression':
+                return f"{metrics['r2']:.4f}"
+        
+        return "..."
+
+    @rx.var
+    def get_main_revised_ml_metric(self) -> str: 
+        if len(self.auto_ml_metrics_dic) >= 2: 
+            metrics = self.auto_ml_metrics_dic["revised_model_metrics"]
+            
+            if self.ml_problem_type == 'classification':
+                return f"{metrics['accuracy']:.4f}"
+            elif self.ml_problem_type == 'regression':
+                return f"{metrics['r2']:.4f}"
+        
+        return "..."
 
 
     async def get_final_dataset_head(self, num: int) -> pd.DataFrame: 
@@ -348,9 +485,7 @@ class FeatureFlowState(rx.State):
             # target_var: str 
             # evaluation_metric: str 
             # training_framework: str
-        self.ml_problem_type = 'regression'
         self.target_var = 'price'
-        self.training_framework= 'xgb_limitdepth'
 
         self.run_auto_ml_process()
         print("Done")
@@ -360,6 +495,19 @@ class FeatureFlowState(rx.State):
     def run_auto_ml_process(self): 
         print("- Starting AutoML training")
 
+        #For testing, remove
+        # self.ml_problem_type = 'regression'
+        # self.training_framework= 'xgb_limitdepth'
+
+        """
+        ['xgboost', 'xgb_limitdepth', 'rf', 'lgbm', 
+        'lgbm_spark', 'rf_spark', 'lrl1', 'lrl2', 'catboost', 'extra_tree', 'kneighbor', 'transformer', 'transformer_ms', 'histgb', 
+        'svc', 'sgd', 'nb_spark', 'enet', 'lassolars', 'glr_spark', 'lr_spark', 'svc_spark', 'gbt_spark', 'aft_spark']
+        """
+
+        # base_dataset = handle_null_imputation(self.base_dataset, self.base_imputation_choices)
+        # revised_dataset = handle_null_imputation(self.final_dataset, self.final_imputation_choices)
+
         results = train_and_compare_automl(
             base_df=self.base_dataset,
             revised_df=self.final_dataset,
@@ -367,6 +515,8 @@ class FeatureFlowState(rx.State):
             target=self.target_var, 
             training_framework=self.training_framework,  
         )
+
+
         self.auto_ml_metrics_dic = results
 
         print("Comparison Results:", results)
@@ -473,22 +623,33 @@ class FeatureFlowState(rx.State):
 
         self.base_dataset = pd.read_csv('csvs/train.csv')
 
-        """Test the code generation, save the functions, load them, and execute them."""
-        self.test_code_gen_chain()  # Run the code generation and save the code
+        self.remove_all_features()
+        self.add_feature("clean_title", "Give me a function that takes the `clean_title` column from my dataframe and transforms it into a boolean")
+        self.add_feature("engine", """Give me a function that takes the `engine` column and outputs the following new columns: `horsepower`, `displacement`, `num_cylinders`. If you can't identify a value for each column, output a null. The expected values for our columns in this example are as follows: `horsepower` = `172`, `displacement` = `1.6`, `num_cylinders` = `4`""")
+
+
+        """Run the code generation, save the functions, load them, and execute them."""
+        self.run_code_gen_chain()
 
         print("Test code gen chain DONE ")
-        # # Simulate your dataframe
-        # data = {
-        #     'clean_title': ['yes', 'no', 'yes'],
-        #     'engine': ['1.6L 4cyl', '2.0L 6cyl', '1.8L 4cyl']
-        # }
-        # df = pd.DataFrame(data)
+
         df = self.base_dataset
+        target_var = self.target_var
+        
+        # Drop the target column from the base dataset
+        df_without_target = df.drop(columns=[target_var])
 
 
         # Dynamically load and execute all generated functions
         functions = load_all_functions()  # Load all generated functions from the saved file
-        result_df = execute_functions_on_df(functions, df)  # Execute functions and combine results
+        result_df = execute_functions_on_df(functions, df, target_var)  # Execute functions and combine results
+
+        # Remove duplicate columns from df_without_target
+        df_without_target = remove_duplicate_columns(df_without_target, result_df)
+
+        # Concatenate the original (minus target) with the generated features
+        result_df = pd.concat([df_without_target.reset_index(drop=True), result_df.reset_index(drop=True)], axis=1)
+
 
         # Display the final dataframe
         print("Final DataFrame with all generated feature columns:")
@@ -507,27 +668,35 @@ class FeatureFlowState(rx.State):
     def run_code_gen_and_execution(self):
         print("Running code gen execution...")
 
-        self.base_dataset = pd.read_csv('csvs/train.csv')
+        #self.base_dataset = pd.read_csv('csvs/train.csv')
 
-        """Test the code generation, save the functions, load them, and execute them."""
-        # self.test_code_gen_chain()  # Run the code generation and save the code
+        """Run the code generation, save the functions, load them, and execute them."""
         self.run_code_gen_chain()
 
         print("Code gen chain DONE ")
-        # Simulate your dataframe
-        # data = {
-        #     'clean_title': ['yes', 'no', 'yes'],
-        #     'engine': ['1.6L 4cyl', '2.0L 6cyl', '1.8L 4cyl']
-        # }
+   
         df = self.base_dataset
+        target_var = self.target_var
+
+        # Drop the target column from the base dataset
+        df_without_target = df.drop(columns=[target_var])
 
         # Dynamically load and execute all generated functions
         functions = load_all_functions()  # Load all generated functions from the saved file
-        result_df = execute_functions_on_df(functions, df)  # Execute functions and combine results
+        result_df = execute_functions_on_df(functions, df, target_var)  # Execute functions and combine results
 
+        # Remove duplicate columns from df_without_target
+        df_without_target = remove_duplicate_columns(df_without_target, result_df)
+
+
+        # Concatenate the original (minus target) with the generated features
+        result_df = pd.concat([df_without_target.reset_index(drop=True), result_df.reset_index(drop=True)], axis=1)
+
+        
         # Display the final dataframe
         print("Final DataFrame with all generated feature columns:")
         print(result_df)
+
 
         # Save the final DataFrame to a CSV file
         result_df.to_csv('features_generated.csv', index=False)
