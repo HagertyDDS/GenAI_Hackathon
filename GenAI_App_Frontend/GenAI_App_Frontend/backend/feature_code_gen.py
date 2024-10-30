@@ -143,6 +143,34 @@ load_dotenv()
 
 
 
+# CODE_GEN_TEMPLATE = """
+# You will be creating a function that should generate a column of data for a feature set that will be used to train a machine learning model. 
+
+# Based on the user request below describing a new feature, create a function that takes in the source data dataframe, performs the necessary operations, and outputs 
+# a single column dataframe containing the value of the new feature for each row in the source data dataframe.
+# Provide valid, expert-level, python code.
+
+# User Request: {request}
+
+# The function should strictly follow these format specifications:
+# 1. The function should have a descriptive name.
+# 2. There should be a single input parameter called DF. DF is a Pandas Dataframe. This dataframe is the source data that your features will be created from. 
+# 3. The output should be a single column dataframe, containing the value of the new feature for each row in the source data dataframe. 
+
+# Your code should follow these guidelines:
+# 1. Be Performant
+# 2. Handle Edge Cases Gracefully
+# 3. Be Secure
+# 4. Be fully documented as an OpenAPI Specification (OAS)
+
+# **The corresponding documentation for the columns included as part of this user request may be found here:**
+# Documentation: {documentation}
+
+# Finally, your output should be valid JSON with two keys: `code` and `OAS`. The values of these should be the raw python code and the OpenAPI Specification of said code, respectively. **Provide only these two things, no other commentary, no markdown, and no text explanations.**
+# {format_instructions}
+# """
+
+
 CODE_GEN_TEMPLATE = """
 You will be creating a function that should generate a column of data for a feature set that will be used to train a machine learning model. 
 
@@ -150,10 +178,20 @@ Based on the user request below describing a new feature, create a function that
 a single column dataframe containing the value of the new feature for each row in the source data dataframe.
 Provide valid, expert-level, python code.
 
+----
+
+You will be creating a python function to generate a new feature, based on existing features in a pandas dataframe.
+
+To help you create this function, you will be provided with the following: 
+- The first 10 rows of the dataframe, to give you context on what each column contains. 
+- The documentation of all the columns in the dataframe in the form.
+
+Based on the user request below describing the new feature, generate the function. 
+
 User Request: {request}
 
 The function should strictly follow these format specifications:
-1. The function should have a descriptive name.
+1. The function should be named {column_name}.
 2. There should be a single input parameter called DF. DF is a Pandas Dataframe. This dataframe is the source data that your features will be created from. 
 3. The output should be a single column dataframe, containing the value of the new feature for each row in the source data dataframe. 
 
@@ -192,7 +230,9 @@ CODE_GEN_MODEL = ChatOpenAI(
 )
 
 # Load documentation CSV (hardcoded path in this example)
-ALL_DOCS = pd.read_csv('/Users/johannwest/Documents/Projects/GenAI_Hackathon/GenAI_App_Frontend/csvs/all_docs.csv')
+#ALL_DOCS = pd.read_csv('/Users/johannwest/Documents/Projects/GenAI_Hackathon/GenAI_App_Frontend/csvs/all_docs.csv')
+
+# ALL_DOCS = pd.read_csv('train_docs_text.txt')
 
 #Helper function to get column documentation from a DataFrame
 def _get_documentation(all_docs, column_name, table_name="car_sale_regression"):

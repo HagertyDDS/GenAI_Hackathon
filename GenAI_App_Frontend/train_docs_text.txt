@@ -1,0 +1,53 @@
+Table Documentation:
+
+1. Column Name: `id`
+   - Data Type: Integer
+   - Description: Unique identifier for each row in the dataset, represented by an integer.
+
+2. Column Name: `brand`
+   - Data Type: String
+   - Description: The manufacturer or brand of the vehicle (e.g., "Ford"). Brands encompass models, though models may not be unique to a single brand.
+
+3. Column Name: `model`
+   - Data Type: String
+   - Description: The specific model of the car (e.g., "Mustang"), always associated with a brand.
+
+4. Column Name: `model_year`
+   - Data Type: Integer
+   - Description: The production year of the car model instance.
+
+5. Column Name: `mileage`
+   - Data Type: Integer
+   - Description: Total mileage the car has driven, measured in miles.
+
+6. Column Name: `fuel_type`
+   - Data Type: String
+   - Description: The type of fuel the car uses (e.g., "Gasoline", "E85 Flex Fuel").
+
+7. Column Name: `engine`
+   - Data Type: String
+   - Description: Engine specifications, typically in the format of horsepower, engine size, cylinder count, and fuel type (e.g., "172.0HP 1.6L 4 Cylinder Engine Gasoline Fuel").
+
+8. Column Name: `transmission`
+   - Data Type: String
+   - Description: Type of transmission (e.g., "A/T" for Automatic Transmission).
+
+9. Column Name: `ext_col`
+   - Data Type: String
+   - Description: Exterior color of the car, represented by a base color (e.g., "Silver", "Black", "Red") rather than the manufacturer-specific color name.
+
+10. Column Name: `int_col`
+    - Data Type: String
+    - Description: Interior color of the car, using base colors (e.g., "Silver", "Black", "Red") rather than manufacturer-specific names.
+
+11. Column Name: `accident`
+    - Data Type: String
+    - Description: Information about the car's accident history, including whether any accidents or damage were reported, and the total number if applicable.
+
+12. Column Name: `clean_title`
+    - Data Type: String
+    - Description: Indicates if the car has a clean title with a value of "yes"/"no" or "true"/"false".
+
+13. Column Name: `price`
+    - Data Type: Integer
+    - Description: Price of the car in whole currency units (e.g., USD).

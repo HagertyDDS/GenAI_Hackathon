@@ -6,6 +6,9 @@ from ..backend.feature_flow_state import FeatureFlowState
 
 from ..views.column_null_options import FinalListState
 
+from typing import Any
+
+
 def get_imputation_methods_for_column(column_dtype):
     if pd.api.types.is_numeric_dtype(column_dtype):
         # Show Mean, Median, Mode, and Custom for numeric columns
@@ -32,11 +35,76 @@ def get_dataset_null_options(df):
     
     return null_options
 
+
+
+
+
+
+
+def df_to_list_of_lists(df: pd.DataFrame) -> list[list]:
+    """
+    Converts a DataFrame into a list of lists, where each inner list represents a row.
+    """
+    return df.values.tolist()
+
+def get_df_columns_spec(df: pd.DataFrame) -> list[dict[str, str]]:
+    """
+    Converts DataFrame columns into a list of dictionaries with title and type for each column.
+    """
+    column_list = []
+    for col in df.columns:
+        col_type = str(df[col].dtype)
+        if "int" in col_type:
+            dtype = "int"
+        elif "float" in col_type:
+            dtype = "float"
+        elif "bool" in col_type:
+            dtype = "bool"
+        else:
+            dtype = "str"
+        
+        column_list.append({
+            "title": col,
+            "type": dtype
+        })
+    return column_list
+
+
+
+
+test_columns: list[dict[str, str]] = [
+    {
+        "title": "Code",
+        "type": "str",
+    },
+    {
+        "title": "Value",
+        "type": "int",
+    },
+    {
+        "title": "Activated",
+        "type": "bool",
+    },
+]
+test_data: list[list[Any]] = [
+    ["A", 1, True],
+    ["B", 2, False],
+    ["C", 3, False],
+    ["D", 4, True],
+    ["E", 5, True],
+    ["F", 6, False],
+]
+
 class LoadFeatures(rx.ComponentState):
     path: str = "data.csv"
     csv_data: list = []
     error_message: str = ""
+
+
     df: pd.DataFrame
+
+    df_list_list: list[list[Any]] = []
+    columns_spec: list[Any] = []
 
     async def load_csv(self):
         
@@ -53,6 +121,13 @@ class LoadFeatures(rx.ComponentState):
         print(df)
 
         self.df = df
+
+        # self.df_list_list = df_to_list_of_lists(df)
+        # self.columns_spec = get_df_columns_spec(df)
+
+        self.df_list_list = test_data
+        self.columns_spec = test_columns
+
         self.error_message = ""
          
  
@@ -89,6 +164,27 @@ class LoadFeatures(rx.ComponentState):
                     pagination=True,
                     search=True,
                     sort=True,
+                ),
+                rx.data_editor(
+                    # columns=cls.columns_spec,
+                    # data=cls.df_list_list,
+
+                    columns=test_columns,
+                    data=test_data,
+
+                    # pagination=True,
+                    #search=True,
+                    #sort=True,
+
+                    header_height=60,
+                    max_column_width=300,
+                    min_column_width=100,
+                    row_height=50,
+                    #row_markers="clickable-number",
+                    smooth_scroll_x=True,
+                    #vertical_border=False,
+                    #column_select="multi",
+                    overscroll_x=100,
                 ),
              
                 rx.text("No CSV data loaded yet.")

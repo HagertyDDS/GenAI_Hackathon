@@ -42,9 +42,13 @@ class BaseListState(rx.State):
     def get_str_imputation_choices(self) -> str: 
         return str(self.imputation_choices)
     
-    def save_imputation_choices(self):
-        FeatureFlowState.set_base_imputation_choices(self.imputation_choices)
-        pass
+    async def save_imputation_choices(self):
+        print("Saving IMPUTATION CHOICES:", self.imputation_choices)
+        
+        feature_flow_state = await self.get_state(FeatureFlowState)
+
+        feature_flow_state.set_base_imputation_choices(self.imputation_choices)
+        
 
 
 
@@ -93,21 +97,9 @@ def base_null_options():
 
         rx.vstack(
             rx.heading("Null Value Imputation Options - Base Dataset", size="3"),
-            # rx.input(
-            #     on_blur=BaseListState.set_new_item,
-            #     placeholder="Add a todo...",
-            #     bg="white",
-            # ),
-            # rx.button(
-            #     "Add", on_click=BaseListState.add_item, bg="white"
-            # ),
+
             rx.divider(),
-            # rx.list.ordered(
-            #     rx.foreach(
-            #         BaseListState.items,
-            #         get_item,
-            #     ),
-            # ),
+     
             rx.list(
                 rx.foreach(
                     BaseListState.columns,
@@ -177,9 +169,11 @@ class FinalListState(rx.State):
     def get_str_imputation_choices(self) -> str: 
         return str(self.imputation_choices)
     
-    def save_imputation_choices(self):
-        FeatureFlowState.set_final_imputation_choices(self.imputation_choices)
-        pass
+    async def save_imputation_choices(self):
+        feature_flow_state = await self.get_state(FeatureFlowState)
+
+        feature_flow_state.set_final_imputation_choices(self.imputation_choices)
+        
 
 
 

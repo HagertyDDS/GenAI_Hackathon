@@ -1,0 +1,14 @@
+column_name,data_type,description
+id,int,Unique integer representation of each row in the dataset
+brand,string,String representing the brand/manufacturer of the vehicle (e.g. `Ford`). Brands are a super set of Models. Models are not guaranteed to be unique to a single brand.
+model,string,Specific model of the car (e.g. `Mustang`). Models always belong to a brand.
+model_year,int,Year that instance of the car was produced
+milage,int,Total distance the car has been driven (in miles)
+fuel_type,string,"Type of fuel the car uses (e.g., `Gasoline`, `E85 Flex Fuel`)"
+engine,string,"Engine specifications (e.g., ""172.0HP 1.6L 4 Cylinder Engine Gasoline Fuel"")"
+transmission,string,"Transmission type (e.g., A/T for Automatic Transmission)"
+ext_col,string,"Exterior color of the car. Colors are specifically ""Base Colors"" such as `Silver`, `Black`, `Red`, rather than their manufacturer name"
+int_col,string,"Interior color of the car. Colors are specifically ""Base Colors"" such as `Silver`, `Black`, `Red`, rather than their manufacturer name"
+accident,string,"Accident history of the car. Description includes if an accident or damage has been reported, and if so, how many have been"
+clean_title,string,"""yes""/""no"" or ""true""/""false"" indicating if the car has a clean title"
+price,int,"Price of the car in whole currency units (e.g., USD)"

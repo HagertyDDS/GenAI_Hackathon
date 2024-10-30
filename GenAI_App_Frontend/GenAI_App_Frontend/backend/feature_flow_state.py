@@ -13,9 +13,117 @@ from sklearn.metrics import (
 import importlib.util
 import os
 import joblib
+import random
+
+import re
+from typing import Any
 # Backend imports 
 
 from .feature_code_gen import CODE_GEN_CHAIN
+from .feature_code_gen_v2 import CODE_GEN_CHAIN_V2
+
+
+import re
+
+
+def df_to_list_of_lists(df: pd.DataFrame) -> list[list]:
+    """
+    Converts a DataFrame into a list of lists, where each inner list represents a row.
+    """
+    for col in df.columns:
+        if pd.api.types.is_numeric_dtype(df[col]):
+            df[col] = df[col].fillna(0)  # or another placeholder for numeric columns
+        else:
+            df[col] = df[col].fillna("")  # or any placeholder for non-numeric columns
+
+
+    return df.values.tolist()
+
+def get_df_columns_spec(df: pd.DataFrame) -> list[dict[str, str]]:
+    """
+    Converts DataFrame columns into a list of dictionaries with title and type for each column.
+    """
+    column_list = []
+    for col in df.columns:
+        col_type = str(df[col].dtype)
+        if "int" in col_type:
+            dtype = "int"
+        elif "float" in col_type:
+            dtype = "float"
+        elif "bool" in col_type:
+            dtype = "bool"
+        else:
+            dtype = "str"
+        
+        column_list.append({
+            "title": col,
+            "type": dtype
+        })
+    return column_list
+
+
+
+
+
+def extract_code_from_content(output):
+    """
+    Extracts code from a content string that may include markdown code fences.
+
+    Parameters:
+        content (str): The content string containing code within markdown code fences.
+
+    Returns:
+        str: The extracted code without the markdown code fences.
+    """
+    content = output.content
+    # Use regular expressions to remove code fences
+    code = content.strip()
+
+    # Remove triple backticks and optional language specifier (e.g., ```python)
+    code = re.sub(r'^```(?:python)?\n', '', code)
+    code = re.sub(r'\n```$', '', code)
+
+    return code.strip()
+
+
+
+def read_file_to_string(file_path):
+    """
+    Reads the contents of a text file and returns it as a single string.
+    
+    Parameters:
+        file_path (str): The path to the text file.
+
+    Returns:
+        str: The content of the file as a single string.
+    """
+    try:
+        with open(file_path, 'r') as file:
+            content = file.read()
+        return content
+    except FileNotFoundError:
+        return "File not found."
+    except IOError:
+        return "An error occurred while reading the file."
+
+# Example usage
+# content = read_file_to_string('your_file.txt')
+# print(content)
+
+
+def df_sampler(df):
+    # Select the first 10 rows
+    subset = df.head(10)
+    
+    # Convert each row to a string format for easier interpretation by a language model
+    rows = []
+    for _, row in subset.iterrows():
+        # Convert row to a dictionary and format it as a string
+        row_str = "{ " + ", ".join(f"{col}: {repr(val)}" for col, val in row.items()) + " }"
+        rows.append(row_str)
+    
+    # Join each row with a newline for readability
+    return "\n".join(rows)
 
 
 def load_all_functions(file_path: str = "auto_generated_functions.py"):
@@ -73,6 +181,7 @@ def remove_duplicate_columns(df_without_target: pd.DataFrame, result_df: pd.Data
 def handle_null_imputation(df, imputation_choices):
     for column, method in imputation_choices.items():
         if method == 'Mean':
+
             df[column].fillna(df[column].mean(), inplace=True)
         elif method == 'Median':
             df[column].fillna(df[column].median(), inplace=True)
@@ -80,6 +189,8 @@ def handle_null_imputation(df, imputation_choices):
             df[column].fillna(df[column].mode()[0], inplace=True)
         # elif method == 'Custom':
         #     df[column].fillna(custom_value, inplace=True)
+            
+
     return df
 
 
@@ -237,6 +348,48 @@ def clean_json_output(output: str) -> str:
         return output 
 
 
+
+
+
+# New Resiliant Process Funcs ---------------------------------------------
+    
+MAX_RETRIES = 3
+
+
+def execute_single_function(func, df: pd.DataFrame):
+    """Attempt to execute a single function on the DataFrame."""
+    try:
+        print(f"Executing function: {func.__name__}")
+        result = func(df)  # Expected to return a single-column dataframe
+        return result
+    except Exception as e:
+        print(f"Error executing function {func.__name__}: {e}")
+        return None
+
+def load_single_function(file_path: str, function_name: str):
+    """Load a specific function from the saved Python file."""
+    spec = importlib.util.spec_from_file_location("auto_generated_functions", file_path)
+    generated_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(generated_module)
+    return getattr(generated_module, function_name, None)
+
+def save_generated_code(code: str, file_path: str = "auto_generated_functions.py"):
+    """Clear previous contents and save new generated code to a Python file."""
+    if os.path.exists(file_path):
+        open(file_path, "w").close()  # Clear file contents
+    with open(file_path, "a") as f:
+        f.write(f"\n\n{code}\n")
+    print(f"Generated code saved to {file_path}")
+    
+
+
+
+# ---------------------------------------------
+
+
+
+
+
 class Feature(rx.Base):
     """The Feature object."""
 
@@ -279,6 +432,10 @@ class FeatureFlowState(rx.State):
     base_model_metrics_dic: dict = {}
     revised_model_metrics_dic: dict = {}
 
+
+    
+
+
     def set_ml_problem_type(self, val: str): 
         self.ml_problem_type = val
 
@@ -311,6 +468,43 @@ class FeatureFlowState(rx.State):
     @rx.var 
     def final_dataset_set(self) -> bool:
         return self.final_dataset is not None
+    
+    # @rx.var 
+    # def final_dataset_col_spec(self) -> list[Any]: 
+    #     if self.final_dataset is not None: 
+    #         return get_df_columns_spec(self.final_dataset)
+    #     return []
+    
+    # @rx.var 
+    # def final_dataset_list_list(self) -> list[list[Any]]: 
+    #     if self.final_dataset is not None: 
+    #         return df_to_list_of_lists(self.final_dataset.head(50))
+    #     return []
+
+
+    async def base_dataset_col_spec(self) -> list[Any]: 
+        if self.base_dataset is not None: 
+            return get_df_columns_spec(self.base_dataset)
+        return []
+    
+    
+    async def base_dataset_list_list(self) -> list[list[Any]]: 
+        if self.base_dataset is not None: 
+            return df_to_list_of_lists(self.base_dataset.head(50))
+        return []
+
+    
+    async def final_dataset_col_spec(self) -> list[Any]: 
+        if self.final_dataset is not None: 
+            return get_df_columns_spec(self.final_dataset)
+        return []
+    
+    
+    async def final_dataset_list_list(self) -> list[list[Any]]: 
+        if self.final_dataset is not None: 
+            return df_to_list_of_lists(self.final_dataset.head(50))
+        return []
+
 
     @rx.var 
     def get_base_dataset_cols(self) -> List[str]: 
@@ -320,10 +514,12 @@ class FeatureFlowState(rx.State):
         return []
     
     def set_base_imputation_choices(self, val: dict): 
+        print("backend: Setting base imputation choices...")
         self.base_imputation_choices = val
 
         null_handled_df = handle_null_imputation(self.base_dataset, self.base_imputation_choices)
         self.base_dataset = null_handled_df
+
 
     def set_final_imputation_choices(self, val: dict): 
         self.final_imputation_choices = val
@@ -495,18 +691,11 @@ class FeatureFlowState(rx.State):
     def run_auto_ml_process(self): 
         print("- Starting AutoML training")
 
-        #For testing, remove
-        # self.ml_problem_type = 'regression'
-        # self.training_framework= 'xgb_limitdepth'
-
         """
         ['xgboost', 'xgb_limitdepth', 'rf', 'lgbm', 
         'lgbm_spark', 'rf_spark', 'lrl1', 'lrl2', 'catboost', 'extra_tree', 'kneighbor', 'transformer', 'transformer_ms', 'histgb', 
         'svc', 'sgd', 'nb_spark', 'enet', 'lassolars', 'glr_spark', 'lr_spark', 'svc_spark', 'gbt_spark', 'aft_spark']
         """
-
-        # base_dataset = handle_null_imputation(self.base_dataset, self.base_imputation_choices)
-        # revised_dataset = handle_null_imputation(self.final_dataset, self.final_imputation_choices)
 
         results = train_and_compare_automl(
             base_df=self.base_dataset,
@@ -585,139 +774,331 @@ class FeatureFlowState(rx.State):
         # Test the entire pipeline
                 
 
-    def run_code_gen_chain(self):
-        print("-  Running code gen chain...")
+    # def run_code_gen_chain(self):
+    #     print("-  Running code gen chain...")
 
 
-        ALL_DOCS = pd.read_csv('csvs/all_docs.csv')
+    #     ALL_DOCS = pd.read_csv('csvs/all_docs.csv')
 
-        #Clear out previousely generated code
-        self.clear_current_generated_code()
-
-
-        for feature in self.features:
-            print("Feature CODE GEN CHAIN INPUT:")
-            print(feature.feature_name)
-            print(feature.description)
-            output = CODE_GEN_CHAIN.invoke({
-                "docs": ALL_DOCS,
-                "col": feature.feature_name, 
-                "request": feature.description
-            })
-
-            ########
-            pprint(output)
-            output = clean_json_output(output)
-
-            # Save the generated code to a file
-            if "code" in output:
-                print("Generated code:\n", output["code"])
-                gen_code = output["code"]
-                self.save_generated_code(code=gen_code)
+    #     #Clear out previousely generated code
+    #     self.clear_current_generated_code()
 
 
+    #     for feature in self.features:
+    #         print("Feature CODE GEN CHAIN INPUT:")
+    #         print(feature.feature_name)
+    #         print(feature.description)
+    #         output = CODE_GEN_CHAIN.invoke({
+    #             "docs": ALL_DOCS,
+    #             "col": feature.feature_name, 
+    #             "request": feature.description
+    #         })
+
+    #         ########
+    #         pprint(output)
+    #         output = clean_json_output(output)
+
+    #         # Save the generated code to a file
+    #         if "code" in output:
+    #             print("Generated code:\n", output["code"])
+    #             gen_code = output["code"]
+    #             self.save_generated_code(code=gen_code)
 
 
-    def test_code_gen_and_execution(self):
-        print("Testing code gen execution...")
-
-        self.base_dataset = pd.read_csv('csvs/train.csv')
-
-        self.remove_all_features()
-        self.add_feature("clean_title", "Give me a function that takes the `clean_title` column from my dataframe and transforms it into a boolean")
-        self.add_feature("engine", """Give me a function that takes the `engine` column and outputs the following new columns: `horsepower`, `displacement`, `num_cylinders`. If you can't identify a value for each column, output a null. The expected values for our columns in this example are as follows: `horsepower` = `172`, `displacement` = `1.6`, `num_cylinders` = `4`""")
 
 
-        """Run the code generation, save the functions, load them, and execute them."""
-        self.run_code_gen_chain()
+    # def test_code_gen_and_execution_REMOVETHISPART(self):
+    #     print("Testing code gen execution...")
 
-        print("Test code gen chain DONE ")
 
-        df = self.base_dataset
-        target_var = self.target_var
+    #     # SHOULD BE ONLY DIFFERENT between test and run 
+    #     self.remove_all_features()
+    #     self.add_feature("clean_title", "Give me a function that takes the `clean_title` column from my dataframe and transforms it into a boolean")
+    #     self.add_feature("engine", """Give me a function that takes the `engine` column and outputs the following new columns: `horsepower`, `displacement`, `num_cylinders`. If you can't identify a value for each column, output a null. The expected values for our columns in this example are as follows: `horsepower` = `172`, `displacement` = `1.6`, `num_cylinders` = `4`""")
+
+
+    #     """Run the code generation, save the functions, load them, and execute them."""
+    #     self.run_code_gen_chain()
+
+    #     print("Test code gen chain DONE ")
+
+    #     df = self.base_dataset
+    #     target_var = self.target_var
         
-        # Drop the target column from the base dataset
-        df_without_target = df.drop(columns=[target_var])
+    #     # Drop the target column from the base dataset
+    #     df_without_target = df.drop(columns=[target_var])
 
 
-        # Dynamically load and execute all generated functions
-        functions = load_all_functions()  # Load all generated functions from the saved file
-        result_df = execute_functions_on_df(functions, df, target_var)  # Execute functions and combine results
+    #     # Dynamically load and execute all generated functions
+    #     functions = load_all_functions()  # Load all generated functions from the saved file
+    #     result_df = execute_functions_on_df(functions, df, target_var)  # Execute functions and combine results
 
-        # Remove duplicate columns from df_without_target
-        df_without_target = remove_duplicate_columns(df_without_target, result_df)
+    #     # Remove duplicate columns from df_without_target
+    #     df_without_target = remove_duplicate_columns(df_without_target, result_df)
 
-        # Concatenate the original (minus target) with the generated features
-        result_df = pd.concat([df_without_target.reset_index(drop=True), result_df.reset_index(drop=True)], axis=1)
-
-
-        # Display the final dataframe
-        print("Final DataFrame with all generated feature columns:")
-        print(result_df)
-
-        # Save the final DataFrame to a CSV file
-        result_df.to_csv('features_generated.csv', index=False)
-        print("Final DataFrame saved to 'features_generated.csv'.")
+    #     # Concatenate the original (minus target) with the generated features
+    #     result_df = pd.concat([df_without_target.reset_index(drop=True), result_df.reset_index(drop=True)], axis=1)
 
 
-        self.final_dataset = result_df
+    #     # Display the final dataframe
+    #     print("Final DataFrame with all generated feature columns:")
+    #     print(result_df)
 
+    #     # Save the final DataFrame to a CSV file
+    #     result_df.to_csv('features_generated.csv', index=False)
+    #     print("Final DataFrame saved to 'features_generated.csv'.")
+
+
+    #     self.final_dataset = result_df
 
 
 
     def run_code_gen_and_execution(self):
-        print("Running code gen execution...")
+        print("Running code generation and execution...")
 
-        #self.base_dataset = pd.read_csv('csvs/train.csv')
+        self.clear_current_generated_code()  # Clear previously generated code file
 
-        """Run the code generation, save the functions, load them, and execute them."""
-        self.run_code_gen_chain()
 
-        print("Code gen chain DONE ")
+        target_column = self.base_dataset[self.target_var]
+
+        df = self.base_dataset.drop(columns=[self.target_var])
+        
+        # CODE_GEN vars 
+        df_sample = df_sampler(df)
+        df_docs = read_file_to_string('train_docs_text.txt')
+        
+        
+        successful_functions = []
+        combined_results = pd.DataFrame()
+
+        for feature in self.features:
+            retries = 0
+            success = False
+
+            while retries < MAX_RETRIES and not success:
+                print("Feature:", feature.description)
+                print("Try number:", retries)
+
+                
+                output = CODE_GEN_CHAIN_V2.invoke({
+                    "feature_name": feature.feature_name,
+                    "request": feature.description,
+                    "documentation": df_docs,
+                    "table_sample": df_sample,
+                })
+
+                print()
+                print()
+                print("code gen chain output:")
+                print(output)
+                print()
+                print()
+
+                code = extract_code_from_content(output)
+
+                print()
+                print("Extracted code:")
+                print(code)
+                print()
+
+
+                if not code:
+                    print(f"Skipping feature {feature.feature_name} due to missing code.")
+                    break  # No code generated; skip this feature
+
+                save_generated_code(code=code)  # Save the latest code to file
+
+                func = load_single_function("auto_generated_functions.py", feature.feature_name)
+                if func:
+                    result = execute_single_function(func, df)
+                    if result is not None:  # If function succeeded
+                        combined_results = pd.concat([combined_results, result], axis=1)
+                        successful_functions.append(feature.feature_name)
+                        success = True
+                    else:
+                        retries += 1
+                        print(f"Retry {retries} for feature {feature.feature_name}")
+
+                else: # Function not loaded
+                    print(f"Function {feature.feature_name} could not be loaded.")
+                    break
+
+
+        final_result_df = pd.concat([df, target_column], axis=1)
+
+        print("Final results columns:")
+        print(final_result_df.columns.tolist())
+
+
+        # Save final DataFrame
+        final_result_df.to_csv('features_generated.csv', index=False)
+        print("Final DataFrame saved to 'features_generated.csv'.")
+        self.final_dataset = final_result_df
+
+        print(f"Successfully generated features: {successful_functions}")
+        if len(successful_functions) < len(self.features):
+            print("Some features could not be generated.")
+
+
+    # def run_code_gen_and_execution(self):
+    #     print("Running code gen execution...")
+
+    #     """Run the code generation, save the functions, load them, and execute them."""
+    #     self.run_code_gen_chain()
+
+    #     print("Code gen chain DONE ")
    
-        df = self.base_dataset
-        target_var = self.target_var
+    #     df = self.base_dataset
+    #     target_var = self.target_var
 
-        # Drop the target column from the base dataset
-        df_without_target = df.drop(columns=[target_var])
+    #     # Drop the target column from the base dataset
+    #     df_without_target = df.drop(columns=[target_var])
 
-        # Dynamically load and execute all generated functions
-        functions = load_all_functions()  # Load all generated functions from the saved file
-        result_df = execute_functions_on_df(functions, df, target_var)  # Execute functions and combine results
+    #     # Dynamically load and execute all generated functions
+    #     functions = load_all_functions()  # Load all generated functions from the saved file
+    #     result_df = execute_functions_on_df(functions, df, target_var)  # Execute functions and combine results
 
-        # Remove duplicate columns from df_without_target
-        df_without_target = remove_duplicate_columns(df_without_target, result_df)
+    #     # Remove duplicate columns from df_without_target
+    #     df_without_target = remove_duplicate_columns(df_without_target, result_df)
 
 
-        # Concatenate the original (minus target) with the generated features
-        result_df = pd.concat([df_without_target.reset_index(drop=True), result_df.reset_index(drop=True)], axis=1)
+    #     # Concatenate the original (minus target) with the generated features
+    #     result_df = pd.concat([df_without_target.reset_index(drop=True), result_df.reset_index(drop=True)], axis=1)
 
         
-        # Display the final dataframe
-        print("Final DataFrame with all generated feature columns:")
-        print(result_df)
+    #     # Display the final dataframe
+    #     print("Final DataFrame with all generated feature columns:")
+    #     print(result_df)
 
 
-        # Save the final DataFrame to a CSV file
-        result_df.to_csv('features_generated.csv', index=False)
-        print("Final DataFrame saved to 'features_generated.csv'.")
+    #     # Save the final DataFrame to a CSV file
+    #     result_df.to_csv('features_generated.csv', index=False)
+    #     print("Final DataFrame saved to 'features_generated.csv'.")
 
 
-        self.final_dataset = result_df
+    #     self.final_dataset = result_df
+
+
 
     
 
-    # @rx.var
-    # def base_dataset_preview(self) -> pd.DataFrame:
-    #     print("BASE DATASET C_VAR")
-    #     print(self.base_dataset)
-    #     return self.base_dataset.head(20)
+    def test_code_gen_and_execution(self):
+        print("Running code generation and execution...")
 
-    # @rx.var
-    # def final_dataset_cvar(self) -> pd.DataFrame:
-    #     print("FINAL DATESET C_VAR")
-    #     print(self.final_dataset)
-    #     return self.final_dataset
+        # SHOULD BE ONLY DIFFERENT between test and run 
+        self.remove_all_features()
+        self.add_feature("clean_title_bool", "Give me a function that takes the `clean_title` column from my dataframe and transforms it into a boolean")
+        self.add_feature("horsepower", """Give me a function that takes the `engine` column and outputs the following new columns: `horsepower`. If you can't identify a value for the column, output a null. The expected values for the column in this example are as follows: `horsepower` = `172`""")
+        self.add_feature("displacement", """Give me a function that takes the `engine` column and outputs the following new columns: `displacement`. If you can't identify a value for the column, output a null. The expected values for the column in this example are as follows: `displacement` = `1.6`""")
+        self.add_feature("num_cylinders", """Give me a function that takes the `engine` column and outputs the following new columns: `num_cylinders`. If you can't identify a value for the column, output a null. The expected values for the column in this example are as follows: `num_cylinders` = `4`""")
+
+        self.add_feature("mileage_over_10000", """Give me a field that indicates True when the vehicle has more than 10000 miles on it. Use the mileage field.""")
+        self.add_feature("american_brand", """Create a field to indicate that a vehicle was made by an American company""")
+
+        self.run_code_gen_and_execution()
+
+        # self.clear_current_generated_code()  # Clear previously generated code file
+
+        # target_column = self.base_dataset[self.target_var]
+
+        # df = self.base_dataset.drop(columns=[self.target_var])
+        
+        # # CODE_GEN vars 
+        # df_sample = df_sampler(df)
+        # df_docs = read_file_to_string('train_docs_text.txt')
+        
+        
+
+
+        # successful_functions = []
+        # combined_results = pd.DataFrame()
+
+        # for feature in self.features:
+        #     retries = 0
+        #     success = False
+
+        #     while retries < MAX_RETRIES and not success:
+        #         print("Feature:", feature.description)
+        #         print("Try number:", retries)
+
+                
+        #         output = CODE_GEN_CHAIN_V2.invoke({
+        #             "feature_name": feature.feature_name,
+        #             "request": feature.description,
+        #             "documentation": df_docs,
+        #             "table_sample": df_sample,
+        #         })
+
+        #         print()
+        #         print()
+        #         print("code gen chain output:")
+        #         print(output)
+        #         print()
+        #         print()
+
+        #         code = extract_code_from_content(output)
+
+        #         print()
+        #         print("Extracted code:")
+        #         print(code)
+        #         print()
+
+
+        #         if not code:
+        #             print(f"Skipping feature {feature.feature_name} due to missing code.")
+        #             break  # No code generated; skip this feature
+
+        #         save_generated_code(code=code)  # Save the latest code to file
+
+        #         func = load_single_function("auto_generated_functions.py", feature.feature_name)
+        #         if func:
+        #             result = execute_single_function(func, df)
+        #             if result is not None:  # If function succeeded
+        #                 combined_results = pd.concat([combined_results, result], axis=1)
+        #                 successful_functions.append(feature.feature_name)
+        #                 success = True
+        #             else:
+        #                 retries += 1
+        #                 print(f"Retry {retries} for feature {feature.feature_name}")
+
+        #         else: # Function not loaded
+        #             print(f"Function {feature.feature_name} could not be loaded.")
+        #             break
+
+
+        # # print("Combined results columns:")
+        # # print(combined_results.columns.tolist())
+                    
+        # # Append the target column back to the combined_results DataFrame
+        # # combined_results = pd.concat([combined_results, target_column], axis=1)
+
+        # # print("Combined results columns after concat with target_col:")
+        # # print(combined_results.columns.tolist())
+
+
+        # # print("DF columns:")
+        # # print(df.columns.tolist())
+
+        
+        # # # Combine the original dataframe (minus target column) with generated features
+        # # final_result_df = pd.concat([df.reset_index(drop=True), combined_results.reset_index(drop=True)], axis=1)
+
+
+        # final_result_df = pd.concat([df, target_column], axis=1)
+
+        # print("Final results columns:")
+        # print(final_result_df.columns.tolist())
+
+
+        # # Save final DataFrame
+        # final_result_df.to_csv('features_generated.csv', index=False)
+        # print("Final DataFrame saved to 'features_generated.csv'.")
+        # self.final_dataset = final_result_df
+
+        # print(f"Successfully generated features: {successful_functions}")
+        # if len(successful_functions) < len(self.features):
+        #     print("Some features could not be generated.")
+
 
 
 

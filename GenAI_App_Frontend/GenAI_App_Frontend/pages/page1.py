@@ -11,7 +11,6 @@ from ..views.csv_upload import csv_upload_view
 # from ..views.table import main_table
 from ..views.csv_table import main_table
 from ..views.upload_and_table import editable_text_example
-from ..views.input_path import base_dataset_input
 from ..views.upload_csv import upload_csv
 from ..views.pdf_upload import index as pdf_upload
 from ..views.automl_settings import ml_config_view as automl_settings
@@ -24,8 +23,13 @@ from .landing.index import index as hero
 
 from .. import styles
 
+
+from ..views.input_path import base_dataset_input
+from ..views.input_path_v2 import base_datatable_v2
+
 from ..views.button_stuff import default_class_name, variant_styles, get_variant_class
 from ..views.feature_datatable import feature_datatable
+from ..views.feature_datatable_v2 import feature_datatable_v2
 
 
 # Backend imports 
@@ -156,8 +160,13 @@ def page1() -> rx.Component:
                 database_connection(),
                 margin_bottom="60px"
             ),
+            # rx.box(
+            #     base_dataset_input(),
+            #     margin_bottom="60px",
+            # ),
             rx.box(
-                base_dataset_input(),
+                base_datatable_v2(),
+                
                 margin_bottom="60px",
             ),
 
@@ -210,30 +219,19 @@ def page1() -> rx.Component:
                     + get_variant_class("indigo"),
                 margin_bottom="60px",
             ),
-            # rx.button(
-            #     "Test Code Gen Chain",
-            #     on_click=FeatureFlowState.test_code_gen_chain,
-            #     class_name=default_class_name
-            #         + " "
-            #         + variant_styles["primary"]["class_name"]
-            #         + " "
-            #         + get_variant_class("indigo"),
+            
+
+
+            # rx.box(
+            #     feature_datatable(),
             #     margin_bottom="60px",
             # ),
-            # rx.button(
-            #     "Test Code Gen Execution",
-            #     on_click=FeatureFlowState.test_code_gen_and_execution,
-            #     class_name=default_class_name
-            #         + " "
-            #         + variant_styles["primary"]["class_name"]
-            #         + " "
-            #         + get_variant_class("indigo"),
-            #     margin_bottom="60px",
-            # ),
+
             rx.box(
-                feature_datatable(),
+                feature_datatable_v2(),
                 margin_bottom="60px",
             ),
+            
             ######
 
             rx.box(
