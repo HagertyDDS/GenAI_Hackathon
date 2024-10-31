@@ -47,37 +47,6 @@ from ..views.page_1_state import Page1State
 
 
 
-# class Page1State(rx.State): 
-
-#     placeholder: str
-
-#     test_generate_features_loading: bool = False
-#     database_conn_loaded: bool = False
-
-
-#     def set_test_generate_features_loading(self): 
-#         self.test_generate_features_loading = True
-
-
-#     async def test_generate_features(self): 
-        
-#         #result = FeatureFlowState.test_code_gen_and_execution()
-
-#         feature_flow_state = await self.get_state(FeatureFlowState)
-#         result = await feature_flow_state.test_code_gen_and_execution()
-
-#         if result: 
-#             print("Code Gen and Execution Test Passed")
-
-#         self.test_generate_features_loading = False 
-
-#         return 
-    
-#     def set_database_conn_loaded(self, value): 
-#         self.database_conn_loaded = value
-
-
-
 
 
 @template(route="/", title="Page1")
@@ -254,41 +223,24 @@ def page1() -> rx.Component:
                 ),
             ),
             
-            # rx.box(
-            #     feature_list_view(),
-            #     margin_bottom="60px",
-            #     width="100%"
 
-            # ),
+
+            
 
 
             # rx.cond(
-            #     Page1State.test_generate_features_loading,
-            #     rx.spinner(),
+            #     Page1State.base_datatable_loaded,
             #     rx.button(
-            #         "Test Generate Features (with set Feature values)",
-            #         on_click=[Page1State.set_test_generate_features_loading, Page1State.test_generate_features_parent],
-            #         class_name=default_class_name
-            #             + " "
-            #             + variant_styles["primary"]["class_name"]
-            #             + " "
-            #             + get_variant_class("indigo"),
-            #         margin_bottom="30px",
+            #             "Test Generate Features (with set Feature values)",
+            #             on_click=[Page1State.set_test_generate_features_loading, Page1State.test_generate_features],
+            #             loading=Page1State.test_generate_features_loading,
+            #             disabled=Page1State.test_generate_features_loading,
+            #             # style=button_style,
+            #             style=button_style_save,
+            #             background='rgba(51, 51, 51, 0.05)',
+            #             color='black'
             #     ),
             # ),
-            rx.cond(
-                Page1State.base_datatable_loaded,
-                rx.button(
-                        "Test Generate Features (with set Feature values)",
-                        on_click=[Page1State.set_test_generate_features_loading, Page1State.test_generate_features],
-                        loading=Page1State.test_generate_features_loading,
-                        disabled=Page1State.test_generate_features_loading,
-                        # style=button_style,
-                        style=button_style_save,
-                        background='rgba(51, 51, 51, 0.05)',
-                        color='black'
-                ),
-            ),
 
             rx.cond(
                 Page1State.features_generated,
