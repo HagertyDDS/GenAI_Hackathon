@@ -24,7 +24,7 @@ Our team created a Gen AI application that automates feature engineering based o
 * Model Registry - Utilized Databricks MLflow Model Registry to register and manage models
 
 ## Names and country of residence of all your teammates
-Cole Mabie - United States of America
-Chris Sweet - United States of America
-Gowri Dath - United States of America
-Johann West - United States America
+- Cole Mabie - United States of America
+- Chris Sweet - United States of America
+- Gowri Dath - United States of America
+- Johann West - United States America
