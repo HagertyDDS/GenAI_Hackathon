@@ -9,3 +9,4 @@ __pycache__/
 
 venv/
 GenAI_App_Frontend/venv/
+.DS_Store
