@@ -1,7 +1,11 @@
 # Ignore virtual environments
 frontend/venv/
 backend/venv/
-
+GenAI_App_Frontend/venv/
 # Ignore Python bytecode
 *.pyc
 __pycache__/
+.env
+
+venv/
+GenAI_App_Frontend/venv/
