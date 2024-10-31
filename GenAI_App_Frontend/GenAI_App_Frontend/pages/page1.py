@@ -1,9 +1,10 @@
 """The first page."""
 
 
-from ..templates import template
-
 import reflex as rx
+import time 
+
+from ..templates import template
 from ..views.color_picker import primary_color_picker, secondary_color_picker
 from ..views.radius_picker import radius_picker
 from ..views.scaling_picker import scaling_picker
@@ -26,21 +27,56 @@ from .. import styles
 
 from ..views.input_path import base_dataset_input
 from ..views.input_path_v2 import base_datatable_v2
+from ..views.input_path_v3 import base_datatable_v3
 
-from ..views.button_stuff import default_class_name, variant_styles, get_variant_class
+from ..views.button_stuff import default_class_name, variant_styles, get_variant_class, button_style, button_style_save
 from ..views.feature_datatable import feature_datatable
 from ..views.feature_datatable_v2 import feature_datatable_v2
 
+from ..views.feature_list_v2 import feature_list_v2
+
+
+
 
 # Backend imports 
-from ..backend.table_state import TableState
 from ..backend.feature_flow_state import FeatureFlowState
 
 
+# state 
+from ..views.page_1_state import Page1State
 
-class Page1State(rx.State): 
 
-    placeholder: str
+
+# class Page1State(rx.State): 
+
+#     placeholder: str
+
+#     test_generate_features_loading: bool = False
+#     database_conn_loaded: bool = False
+
+
+#     def set_test_generate_features_loading(self): 
+#         self.test_generate_features_loading = True
+
+
+#     async def test_generate_features(self): 
+        
+#         #result = FeatureFlowState.test_code_gen_and_execution()
+
+#         feature_flow_state = await self.get_state(FeatureFlowState)
+#         result = await feature_flow_state.test_code_gen_and_execution()
+
+#         if result: 
+#             print("Code Gen and Execution Test Passed")
+
+#         self.test_generate_features_loading = False 
+
+#         return 
+    
+#     def set_database_conn_loaded(self, value): 
+#         self.database_conn_loaded = value
+
+
 
 
 
@@ -112,25 +148,6 @@ def page1() -> rx.Component:
 
         ),
 
-
-        ###
-
-        #REPLACE this with logos of stuff used
-
-        # rx.flex(
-        #     rx.image(src="/reflex.png", height="50px"),
-        #     rx.image(src="/box.png", height="50px"),
-        #     rx.image(src="/llamaindex.png", height="50px"),
-        #     rx.image(src="/pinecone.png", height="50px"),
-        #     spacing="2",
-        #     align="center",
-        #     justify="center",
-        #     width="100%",
-        #     margin_bottom="25px"
-        # ),
-
-        ###
-
         
         rx.vstack(
             rx.box(
@@ -155,111 +172,202 @@ def page1() -> rx.Component:
                 border_radius="20px"
 
             ),
+
+
+
         
             rx.box(
                 database_connection(),
-                margin_bottom="60px"
-            ),
-            # rx.box(
-            #     base_dataset_input(),
-            #     margin_bottom="60px",
-            # ),
-            rx.box(
-                base_datatable_v2(),
                 
-                margin_bottom="60px",
+                background_color=rx.color("gray", 2),
+                border_bottom=styles.border,
+                border_top=styles.border,
+                border_left=styles.border,
+                border_right=styles.border,
+                width="100%",
+                margin_bottom="50px",
+                border_radius="20px",
             ),
 
+            rx.cond(
+                Page1State.database_conn_loaded,
+                rx.box(
+                    base_datatable_v3(),
+
+                    background_color=rx.color("gray", 2),
+                    border_bottom=styles.border,
+                    border_top=styles.border,
+                    border_left=styles.border,
+                    border_right=styles.border,
+                    width="100%",
+                    margin_bottom="50px",
+                    border_radius="20px",
+                ),
+            ),
 
             ######
 
             rx.box(
                 base_null_options(),
-                margin_bottom="60px",
-                width="60%",
+                
+
+                background_color=rx.color("gray", 2),
+                border_bottom=styles.border,
+                border_top=styles.border,
+                border_left=styles.border,
+                border_right=styles.border,
+                width="100%",
+                margin_bottom="50px",
+                border_radius="20px",
             ), 
 
             ######
 
 
+            rx.cond(
+                Page1State.base_datatable_loaded,
+                rx.box(
+                    automl_settings(),
+                    background_color=rx.color("gray", 2),
+                    border_bottom=styles.border,
+                    border_top=styles.border,
+                    border_left=styles.border,
+                    border_right=styles.border,
+                    width="100%",
+                    margin_bottom="50px",
+                    border_radius="20px",
+                ),
+            ),
 
-            rx.box(
-                automl_settings(),
-                margin_bottom="60px",
-                width="100%"
+            rx.cond(
+                Page1State.base_datatable_loaded,
+                rx.box(
+                    feature_list_v2(),
+                    background_color=rx.color("gray", 2),
+                    border_bottom=styles.border,
+                    border_top=styles.border,
+                    border_left=styles.border,
+                    border_right=styles.border,
+                    width="100%",
+                    margin_bottom="50px",
+                    border_radius="20px",
+                ),
             ),
             
-            rx.box(
-                feature_list_view(),
-                margin_bottom="60px",
-                width="100%"
-
-            ),
-
-
-            
-            rx.button(
-                "Test Generate Features (with set Feature values)",
-                on_click=FeatureFlowState.test_code_gen_and_execution,
-                class_name=default_class_name
-                    + " "
-                    + variant_styles["primary"]["class_name"]
-                    + " "
-                    + get_variant_class("indigo"),
-                margin_bottom="30px",
-            ),
-
-            rx.button(
-                "Test AutoML with default vals",
-                on_click=FeatureFlowState.run_test_auto_ml_values,
-                class_name=default_class_name
-                    + " "
-                    + variant_styles["primary"]["class_name"]
-                    + " "
-                    + get_variant_class("indigo"),
-                margin_bottom="60px",
-            ),
-            
-
-
             # rx.box(
-            #     feature_datatable(),
+            #     feature_list_view(),
             #     margin_bottom="60px",
+            #     width="100%"
+
             # ),
 
-            rx.box(
-                feature_datatable_v2(),
-                margin_bottom="60px",
+
+            # rx.cond(
+            #     Page1State.test_generate_features_loading,
+            #     rx.spinner(),
+            #     rx.button(
+            #         "Test Generate Features (with set Feature values)",
+            #         on_click=[Page1State.set_test_generate_features_loading, Page1State.test_generate_features_parent],
+            #         class_name=default_class_name
+            #             + " "
+            #             + variant_styles["primary"]["class_name"]
+            #             + " "
+            #             + get_variant_class("indigo"),
+            #         margin_bottom="30px",
+            #     ),
+            # ),
+            rx.cond(
+                Page1State.base_datatable_loaded,
+                rx.button(
+                        "Test Generate Features (with set Feature values)",
+                        on_click=[Page1State.set_test_generate_features_loading, Page1State.test_generate_features],
+                        loading=Page1State.test_generate_features_loading,
+                        disabled=Page1State.test_generate_features_loading,
+                        # style=button_style,
+                        style=button_style_save,
+                        background='rgba(51, 51, 51, 0.05)',
+                        color='black'
+                ),
+            ),
+
+            rx.cond(
+                Page1State.features_generated,
+                rx.box(
+                    feature_datatable_v2(),
+                    background_color=rx.color("gray", 2),
+                    border_bottom=styles.border,
+                    border_top=styles.border,
+                    border_left=styles.border,
+                    border_right=styles.border,
+                    width="100%",
+                    margin_bottom="50px",
+                    border_radius="20px",
+                ),
             ),
             
             ######
 
             rx.box(
                 final_null_options(),
-                margin_bottom="60px",
-                width="60%",
+                background_color=rx.color("gray", 2),
+                border_bottom=styles.border,
+                border_top=styles.border,
+                border_left=styles.border,
+                border_right=styles.border,
+                width="100%",
+                margin_bottom="50px",
+                border_radius="20px",
             ), 
 
             ######
 
 
-            rx.button(
-                "Build Model",
-                on_click=FeatureFlowState.run_auto_ml_process,
-                class_name=default_class_name
-                    + " "
-                    + variant_styles["primary"]["class_name"]
-                    + " "
-                    + get_variant_class("indigo"),
-                margin_bottom="60px",
+            # rx.button(
+            #     "Build Model",
+            #     on_click=FeatureFlowState.run_auto_ml_process,
+            #     style=button_style,
+
+            #     # class_name=default_class_name
+            #     #     + " "
+            #     #     + variant_styles["primary"]["class_name"]
+            #     #     + " "
+            #     #     + get_variant_class("indigo"),
+            #     margin_bottom="60px",
+            #     width="20%",
+            # ),
+            rx.cond(
+                Page1State.features_generated,
+                rx.button(
+                    "Build Model",
+                    on_click=[Page1State.set_auto_ml_loading, Page1State.run_auto_ml],
+                    loading=Page1State.auto_ml_loading,
+                    style=button_style,
+
+                    # class_name=default_class_name
+                    #     + " "
+                    #     + variant_styles["primary"]["class_name"]
+                    #     + " "
+                    #     + get_variant_class("indigo"),
+                    margin_bottom="60px",
+                    width="20%",
+                ),
             ),
             
-
-            rx.box(
-                results_view(),
-                margin_bottom="60px",
+            rx.cond(
+                Page1State.results_loaded,
+                rx.box(
+                    results_view(),
+                    background_color=rx.color("gray", 2),
+                    border_bottom=styles.border,
+                    border_top=styles.border,
+                    border_left=styles.border,
+                    border_right=styles.border,
+                    width="100%",
+                    margin_bottom="50px",
+                    border_radius="20px",
+                ),
             ),
-          
+          width="100%",
         ),
 
         spacing="4",

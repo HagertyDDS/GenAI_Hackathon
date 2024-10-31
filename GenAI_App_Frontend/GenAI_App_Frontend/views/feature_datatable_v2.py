@@ -2,11 +2,12 @@
 
 import reflex as rx 
 from typing import Any
-from .button_stuff import default_class_name, variant_styles, get_variant_class
+from .button_stuff import default_class_name, variant_styles, get_variant_class, button_style
 
 
 
 from ..backend.feature_flow_state import FeatureFlowState
+from ..views.column_null_options import FinalListState
 
 
 
@@ -55,6 +56,8 @@ class DataEditorState(rx.State):
 
             lst = await feature_flow_state.final_dataset_list_list()
 
+
+
             # bad_row = lst.pop(11)
             # print("BAD ROW:", bad_row)
 
@@ -66,12 +69,25 @@ class DataEditorState(rx.State):
 
             self.loaded = True
 
-            print()
-            print("FINAL COLS:", self.final_cols)
-            print()
-            print("FINAL DF:", self.final_df)
-            print()
-            print("Final DF type ", type(self.final_df))
+            df = await feature_flow_state.get_final_dataset_head(20)
+            combined_results_df = await feature_flow_state.get_combined_results_head(20)
+
+            final_list_state = await self.get_state(FinalListState)
+
+            # final_list_state.columns = df.columns.tolist()
+            # # Initialize imputation_choices as a dictionary with column names as keys and empty strings as values
+            # final_list_state.imputation_choices = {col: "" for col in df.columns.tolist()}
+
+            final_list_state.columns = combined_results_df.columns.tolist()
+            # Initialize imputation_choices as a dictionary with column names as keys and empty strings as values
+            final_list_state.imputation_choices = {col: "" for col in combined_results_df.columns.tolist()}
+
+            # print()
+            # print("FINAL COLS:", self.final_cols)
+            # print()
+            # print("FINAL DF:", self.final_df)
+            # print()
+            # print("Final DF type ", type(self.final_df))
 
 
 
@@ -83,12 +99,8 @@ def feature_datatable_v2():
         rx.button(
                 "Load",
                 on_click=DataEditorState.load_dataset,
-                class_name=default_class_name
-                    + " "
-                    + variant_styles["primary"]["class_name"]
-                    + " "
-                    + get_variant_class("indigo"),
-                margin_bottom="60px",
+                style=button_style,
+                margin_bottom="30px",
         ),
 
         rx.cond(
@@ -110,12 +122,13 @@ def feature_datatable_v2():
                 # overscroll_y=100, 
                 smooth_scroll_y=True,
                 height=800,
-                width=1200
+                width=1200,
+                border_radius="10px",
                 
             ),
-            rx.text("Please have dataset first"),
+            
         ),
-    
+        padding="40px",
 
     )
 

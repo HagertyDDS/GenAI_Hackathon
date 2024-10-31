@@ -4,7 +4,7 @@ import reflex as rx
 from typing import List
 
 from ..backend.feature_flow_state import FeatureFlowState
-from .button_stuff import default_class_name, variant_styles, get_variant_class
+from .button_stuff import default_class_name, variant_styles, get_variant_class, button_style
 
 
 
@@ -17,6 +17,10 @@ class BaseListState(rx.State):
     
     new_item: str
 
+    comments_dict: dict = {}
+
+    db_table_data_type_dict: dict = {}
+    db_table_descriptions_dict: dict = {}
 
 
     @rx.var 
@@ -54,13 +58,39 @@ class BaseListState(rx.State):
 
 def get_base_item(item):
     return rx.list.item(
-        
+        rx.vstack(
         rx.hstack(
-            rx.badge(
-                item, 
-                font_size="1.25em",
-                variant="soft",
-                radius="full",
+            rx.vstack(
+                rx.hstack(
+                    rx.badge(
+                        item, 
+                        font_size="1.25em",
+                        variant="soft",
+                        radius="full",
+                    ),
+                    rx.cond(
+                        BaseListState.db_table_data_type_dict[item] == "LONG",
+                        rx.badge(
+                            BaseListState. db_table_data_type_dict[item],
+                            font_size="1.25em",
+                            variant="soft",
+                            radius="full",
+                            color="orange",
+                        ),
+                        rx.badge(
+                            BaseListState. db_table_data_type_dict[item],
+                            font_size="1.25em",
+                            variant="soft",
+                            radius="full",
+                            color="green",
+                        ),
+
+                    ),
+                
+                ),
+                rx.text(
+                    BaseListState.db_table_descriptions_dict[item]
+                ),
             ),
             rx.select(
                 ['None', 'Mean', 'Median', 'Mode'],
@@ -73,14 +103,16 @@ def get_base_item(item):
                 radius="full",
                 width="50%",
             ),
-            align="center",
+            align="start",
             justify="between",
             width="100%",
 
         ),
+        rx.divider(),
+        
         width="100%",
-        margin_bottom="5px",
-    )
+        margin_bottom="15px",
+    ))
 
 
 
@@ -96,7 +128,7 @@ def base_null_options():
         FeatureFlowState.base_dataset_set & BaseListState.columns_set, 
 
         rx.vstack(
-            rx.heading("Null Value Imputation Options - Base Dataset", size="3"),
+            rx.heading("Null Value Imputation Options - Base Dataset"),
 
             rx.divider(),
      
@@ -110,21 +142,18 @@ def base_null_options():
             rx.button(
                     "Save", 
                     on_click=BaseListState.save_imputation_choices,
-                    class_name=default_class_name
-                    + " "
-                    + variant_styles["primary"]["class_name"]
-                    + " "
-                    + get_variant_class("indigo"),
+                    style=button_style,
 
             ),
-            rx.text(BaseListState.get_str_imputation_choices),
-            bg="#ededed",
-            padding="1em",
-            border_radius="0.5em",
-            shadow="lg",
+            # rx.text(BaseListState.get_str_imputation_choices),
+            # bg="#ededed",
+            # padding="1em",
+            # border_radius="0.5em",
+            # shadow="lg",
+            padding="40px",
             width="100%",
         ),
-        rx.text("Please select a base dataset first"),
+        
     )
 
 
@@ -179,6 +208,8 @@ class FinalListState(rx.State):
 
 def get_final_item(item):
     return rx.list.item(
+
+        rx.vstack(
         
         rx.hstack(
             rx.badge(
@@ -202,9 +233,11 @@ def get_final_item(item):
             width="100%",
 
         ),
+        rx.divider(),
+
         width="100%",
         margin_bottom="5px",
-    )
+    ))
 
 
 
@@ -220,7 +253,7 @@ def final_null_options():
         FeatureFlowState.final_dataset_set & FinalListState.columns_set, 
 
         rx.vstack(
-            rx.heading("Null Value Imputation Options - FeatureFLow Dataset", size="3"),
+            rx.heading("Null Value Imputation Options - FeatureFLow Dataset"),
             rx.divider(),
             rx.list(
                 rx.foreach(
@@ -232,19 +265,16 @@ def final_null_options():
             rx.button(
                     "Save", 
                     on_click=FinalListState.save_imputation_choices,
-                    class_name=default_class_name
-                    + " "
-                    + variant_styles["primary"]["class_name"]
-                    + " "
-                    + get_variant_class("indigo"),
+                    style=button_style,
 
             ),
-            rx.text(FinalListState.get_str_imputation_choices),
-            bg="#ededed",
-            padding="1em",
-            border_radius="0.5em",
-            shadow="lg",
+            # rx.text(FinalListState.get_str_imputation_choices),
+            # bg="#ededed",
+            # padding="1em",
+            # border_radius="0.5em",
+            # shadow="lg",
             width="100%",
+            padding="40px",
         ),
-        rx.text("Please generate a FeatureFlow dataset first"),
+        
     )

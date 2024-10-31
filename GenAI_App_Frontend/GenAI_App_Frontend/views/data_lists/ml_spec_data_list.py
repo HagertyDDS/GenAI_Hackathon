@@ -23,7 +23,10 @@ def ml_spec_data_list() -> rx.Component:
                 ),
                 rx.data_list.item(
                     rx.data_list.label("Evaluation Metric"),
-                    rx.data_list.value(FeatureFlowState.evaluation_metric),
+                    rx.data_list.value(
+                        #FeatureFlowState.evaluation_metric
+                        'r2'
+                    ),
                     align="center",
                 ),
                 rx.data_list.item(
